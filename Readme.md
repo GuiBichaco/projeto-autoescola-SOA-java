@@ -19,7 +19,7 @@ Este projeto foi criado para demonstrar habilidades em desenvolvimento backend c
 
 ## ✨ Funcionalidades Principais
 
--   **Gestão de Instrutores:**
+-   **Gestão de Instrutores:** ssss
     -   Cadastro (Create)
     -   Listagem paginada e ordenada (Read)
     -   Atualização de dados (Update)
@@ -60,7 +60,7 @@ Este projeto foi criado para demonstrar habilidades em desenvolvimento backend c
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/seu-usuario/seu-repositorio.git](https://github.com/seu-usuario/seu-repositorio.git)
+    git clone [https://github.com/GuiBichaco/projeto-autoescola-SOA-java.git](https://github.com/GuiBichaco/projeto-autoescola-SOA-java.git)
     ```
 2.  **Navegue até a pasta do projeto e abra-o** em sua IDE de preferência (IntelliJ IDEA é recomendado).
 
