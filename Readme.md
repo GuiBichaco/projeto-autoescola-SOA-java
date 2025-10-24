@@ -19,7 +19,7 @@
 
 API RESTful **segura** desenvolvida em Java 21 e Spring Boot 3 para o backend de um sistema de gerenciamento de autoescola. O projeto implementa um fluxo de autenticação e autorização completo utilizando **Spring Security e JSON Web Tokens (JWT)**.
 
-Esta versão finaliza o sistema com a implementação de **Controle de Acesso Baseado em Papéis (RBAC)**, distinguindo usuários `ADMIN` (que gerenciam o sistema) de usuários `USER` (que consomem os dados da autoescola).
+Esta versão finaliza o sistema com a implementação de **Controlo de Acesso Baseado em Papéis (RBAC)**, distinguindo utilizadores `ADMIN` (que gerenciam o sistema) de utilizadores `USER` (que consomem os dados da autoescola).
 
 A API foi refatorada para aplicar princípios de Domain-Driven Design (DDD) e Clean Code, como:
 
@@ -120,90 +120,166 @@ A API foi refatorada para aplicar princípios de Domain-Driven Design (DDD) e Cl
     -   **Password:** (deixe em branco)
     -   Clique em "Connect" e você poderá ver as tabelas criadas pelo Flyway.
 
-## 🧭 Como Testar a API (Fluxo Completo com RBAC)
+## 🧭 Como Testar a API (Plano de Teste Completo)
 
-Com a implementação do Spring Security, **todos os endpoints (exceto `/login` e `/h2-console`) estão protegidos**.
+Testaremos a API em três perspetivas: Visitante, Administrador e Usuário Comum.
 
-### Passo 1: Autenticar como ADMIN
+### Fluxo de Teste 1: O Visitante (Não Autenticado)
+**Objetivo:** Garantir que a API está "trancada".
 
-Primeiro, obtenha um token com privilégios de Administrador.
+1.  **Ação:** Tentar listar alunos.
+2.  **Requisição:** `GET http://localhost:8080/alunos`
+3.  **Verificação:**
+    * **Resultado Esperado:** 🛑 Status `403 Forbidden`.
+    * **Conclusão:** A segurança está ativa e a barrar requisições sem token.
 
--   **Método:** `POST`
--   **URL:** `http://localhost:8080/login`
--   **Body (raw/JSON):**
+### Fluxo de Teste 2: O Administrador (`ROLE_ADMIN`)
+**Objetivo:** Provar que o `ADMIN` tem controlo total (gerir utilizadores + gerir autoescola).
+
+#### 2.1. Obter Token de ADMIN
+1.  **Ação:** Fazer login como o utilizador `admin`.
+2.  **Requisição:** `POST http://localhost:8080/login`
+3.  **Corpo (Body) da Requisição:**
     ```json
     {
         "login": "admin",
         "senha": "123456"
     }
     ```
--   **Resposta (200 OK):** Você receberá um **Token de Admin**. Copie-o.
+4.  **Verificação:**
+    * **Resultado Esperado:** ✅ Status `200 OK` e um JSON com o token.
+    * **Ação:** Copie este token. Vamos chamá-lo de `ADMIN_TOKEN`.
 
-### Passo 2: Testar um Endpoint de ADMIN (Ex: Criar um novo Usuário)
+#### 2.2. Testar o CRUD de Utilizadores (Permissão de Admin)
+Use o `ADMIN_TOKEN` em todas as requisições abaixo (na aba `Authorization` -> `Bearer Token`).
 
--   **Método:** `POST`
--   **URL:** `http://localhost:8080/usuarios`
--   **Aba "Authorization"**:
-    -   **Tipo:** `Bearer Token`
-    -   **Token:** Cole o **Token de Admin**.
--   **Aba "Body" (raw/JSON):**
+1.  **Ação: Criar um Utilizador `USER`**
+    * **Requisição:** `POST http://localhost:8080/usuarios`
+    * **Corpo (Body):**
+        ```json
+        {
+            "login": "user_comum",
+            "senha": "123",
+            "role": "ROLE_USER"
+        }
+        ```
+    * **Verificação:** ✅ Status `201 Created`.
+
+2.  **Ação: Listar Utilizadores**
+    * **Requisição:** `GET http://localhost:8080/usuarios`
+    * **Verificação:** ✅ Status `200 OK`. A lista deve mostrar os utilizadores `admin` e o novo `user_comum`.
+
+3.  **Ação: Excluir um Utilizador**
+    * *(Assumindo que `user_comum` é o ID 2)*
+    * **Requisição:** `DELETE http://localhost:8080/usuarios/2`
+    * **Verificação:** ✅ Status `204 No Content`.
+
+#### 2.3. Testar a Troca de Senha (do Próprio Admin)
+1.  **Ação:** O Admin troca a sua própria senha.
+2.  **Requisição:** `PUT http://localhost:8080/usuarios/minha-senha`
+3.  **Authorization:** `Bearer ADMIN_TOKEN`
+4.  **Corpo (Body):**
     ```json
     {
-        "login": "user_comum",
-        "senha": "123",
-        "role": "ROLE_USER"
+        "senhaAtual": "123456",
+        "novaSenha": "nova_senha_admin"
     }
     ```
--   **Resposta:** `201 Created`. (O usuário `user_comum` foi criado).
+5.  **Verificação:**
+    * **Resultado Esperado:** ✅ Status `200 OK` ("Senha alterada com sucesso.").
+    * **Teste de Confirmação:** Tente fazer login com a senha antiga (`123456`). Deve falhar (🛑 `401 Unauthorized`).
 
-### Passo 3: Autenticar como USER
+### Fluxo de Teste 3: O Utilizador Comum (`ROLE_USER`)
+**Objetivo:** Provar que o `USER` pode gerir a autoescola, mas NÃO pode gerir outros utilizadores.
 
-Agora, obtenha um token com privilégios de Usuário comum.
-
--   **Método:** `POST`
--   **URL:** `http://localhost:8080/login`
--   **Body (raw/JSON):**
+#### 3.1. Obter Token de USER
+* *(Pré-requisito: Use o seu `ADMIN_TOKEN` para criar o `user_comum` (login: `user_comum`, senha: `123`, role: `ROLE_USER`)).*
+1.  **Ação:** Fazer login como `user_comum`.
+2.  **Requisição:** `POST http://localhost:8080/login`
+3.  **Corpo (Body):**
     ```json
     {
         "login": "user_comum",
         "senha": "123"
     }
     ```
--   **Resposta (200 OK):** Você receberá um **Token de User**. Copie-o.
+4.  **Verificação:**
+    * **Resultado Esperado:** ✅ Status `200 OK` e um novo token.
+    * **Ação:** Copie este token. Vamos chamá-lo de `USER_TOKEN`.
 
-### Passo 4: Testar Restrições de Permissão (Falha Esperada)
+#### 3.2. Testar Permissões de Admin (Falha Esperada)
+Use o `USER_TOKEN` em todas as requisições abaixo.
 
--   **Método:** `GET`
--   **URL:** `http://localhost:8080/usuarios`
--   **Aba "Authorization"**:
-    -   **Tipo:** `Bearer Token`
-    -   **Token:** Cole o **Token de User** (do Passo 3).
--   **Resposta:** `403 Forbidden`. **Correto!** Um `ROLE_USER` não pode listar os usuários do sistema.
+1.  **Ação: Tentar Listar Utilizadores**
+    * **Requisição:** `GET http://localhost:8080/usuarios`
+    * **Verificação:** 🛑 Status `403 Forbidden`. **Correto!**
 
-### Passo 5: Testar Endpoint de Usuário Comum (Sucesso)
+2.  **Ação: Tentar Criar um Utilizador**
+    * **Requisição:** `POST http://localhost:8080/usuarios`
+    * **Verificação:** 🛑 Status `403 Forbidden`. **Correto!**
 
--   **Método:** `GET`
--   **URL:** `http://localhost:8080/alunos`
--   **Aba "Authorization"**:
-    -   **Tipo:** `Bearer Token`
-    -   **Token:** Cole o **Token de User**.
--   **Resposta:** `200 OK`. **Correto!** Um `ROLE_USER` pode acessar os endpoints da autoescola.
+#### 3.3. Testar Permissões da Autoescola (Sucesso Esperado)
+Use o `USER_TOKEN` nesta requisição.
 
-### Passo 6: Testar Troca de Senha (Qualquer Usuário)
+1.  **Ação: Criar um Aluno**
+    * **Requisição:** `POST http://localhost:8080/alunos`
+    * **Authorization:** `Bearer USER_TOKEN`
+    * **Corpo (Body):**
+        ```json
+        {
+          "nome": "Mariana Costa e Silva",
+          "email": "mariana.costa@example.com",
+          "telefone": "11987654321",
+          "cpf": "48337083074",
+          "endereco": {
+            "logradouro": "Avenida Paulista",
+            "numero": "1578",
+            "bairro": "Bela Vista",
+            "cidade": "São Paulo",
+            "uf": "SP",
+            "cep": "01310-200"
+          }
+        }
+        ```
+    * **Verificação:** ✅ Status `201 Created`. **Correto!**
 
--   **Método:** `PUT`
--   **URL:** `http://localhost:8080/usuarios/minha-senha`
--   **Aba "Authorization"**:
-    -   **Tipo:** `Bearer Token`
-    -   **Token:** Cole o **Token de User**.
--   **Aba "Body" (raw/JSON):**
+2.  **Ação: Listar Instrutores**
+    * **Requisição:** `GET http://localhost:8080/instrutores`
+    * **Verificação:** ✅ Status `200 OK`. **Correto!**
+
+#### 3.4. Testar a Troca de Senha (do Próprio Utilizador)
+1.  **Ação:** O `user_comum` troca a sua própria senha.
+2.  **Requisição:** `PUT http://localhost:8080/usuarios/minha-senha`
+3.  **Authorization:** `Bearer USER_TOKEN`
+4.  **Corpo (Body):**
     ```json
     {
         "senhaAtual": "123",
-        "novaSenha": "nova_senha_456"
+        "novaSenha": "nova_senha_user"
     }
     ```
--   **Resposta:** `200 OK` (com a mensagem "Senha alterada com sucesso.").
+5.  **Verificação:** ✅ Status `200 OK`.
+
+### Fluxo de Teste 4: Regras de Negócio (Agendamento)
+**Objetivo:** Confirmar que as validações de agendamento ainda funcionam.
+
+*(Use qualquer token válido, `ADMIN_TOKEN` ou `USER_TOKEN`. Crie um Aluno (ID 1) antes de começar).*
+
+1.  **Ação (Falha - Horário de Funcionamento):**
+    * `POST /agendamentos` com uma data que seja um Domingo.
+    * **Verificação:** 🛑 `400 Bad Request` + mensagem "Agendamentos só podem ser feitos de Segunda a Sábado...".
+
+2.  **Ação (Falha - Antecedência):**
+    * `POST /agendamentos` com uma data/hora para 10 minutos a partir de agora.
+    * **Verificação:** 🛑 `400 Bad Request` + mensagem "antecedência mínima de 30 minutos...".
+
+3.  **Ação (Sucesso - Aula 1 e 2):**
+    * `POST /agendamentos` com Aluno 1 para uma data válida às 10:00. (✅ `201 Created`)
+    * `POST /agendamentos` com Aluno 1 para a mesma data às 14:00. (✅ `201 Created`)
+
+4.  **Ação (Falha - Limite Diário):**
+    * `POST /agendamentos` com Aluno 1, para a mesma data, às 16:00.
+    * **Verificação:** 🛑 `400 Bad Request` + mensagem "Um aluno não pode ter mais de duas instruções no mesmo dia.".
 
 ## 📜 Endpoints da API
 
