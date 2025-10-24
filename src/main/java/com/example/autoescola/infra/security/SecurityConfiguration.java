@@ -26,15 +26,28 @@ public class SecurityConfiguration {
         return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Atualização da Autorização
                 .authorizeHttpRequests(req -> {
-                    // Libera o endpoint de login
+                    // Endpoints públicos
                     req.requestMatchers(HttpMethod.POST, "/login").permitAll();
-                    // Libera o console H2 (APENAS PARA DESENVOLVIMENTO)
                     req.requestMatchers("/h2-console/**").permitAll();
-                    // Todas as outras requisições exigem autenticação
+
+                    // Endpoints de ADMIN (CRUD de Usuários)
+                    // (Removendo "ROLE_")
+                    req.requestMatchers(HttpMethod.POST, "/usuarios").hasRole("ADMIN");
+                    req.requestMatchers(HttpMethod.GET, "/usuarios").hasRole("ADMIN");
+                    req.requestMatchers(HttpMethod.PUT, "/usuarios/{id}").hasRole("ADMIN");
+                    req.requestMatchers(HttpMethod.DELETE, "/usuarios/{id}").hasRole("ADMIN");
+
+                    // Endpoints de usuário logado (Qualquer role)
+                    req.requestMatchers(HttpMethod.PUT, "/usuarios/minha-senha").authenticated();
+
+                    // Todos os outros endpoints (alunos, instrutores, agendamentos)
+                    // exigem autenticação, mas podem ser acessados por ROLE_USER ou ROLE_ADMIN
                     req.anyRequest().authenticated();
                 })
-                // Corrige problema de frame do H2 Console
+
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
