@@ -6,7 +6,6 @@ import com.example.autoescola.dto.instrutor.InstrutorUpdateDTO;
 import com.example.autoescola.entity.Instrutor;
 import com.example.autoescola.repository.InstrutorRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,10 +21,7 @@ public class InstrutorService {
 
     @Transactional
     public Instrutor create(InstrutorCreateDTO instrutorData) {
-        Instrutor instrutor = new Instrutor();
-        BeanUtils.copyProperties(instrutorData, instrutor);
-        // O telefone não é preenchido no cadastro inicial
-        instrutor.setTelefone("");
+        Instrutor instrutor = new Instrutor(instrutorData);
         return instrutorRepository.save(instrutor);
     }
 
@@ -45,16 +41,7 @@ public class InstrutorService {
         Instrutor instrutor = instrutorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Instrutor não encontrado com o id: " + id));
 
-            instrutor.setNome(instrutorData.nome());
-            instrutor.setTelefone(instrutorData.telefone());
-            instrutor.setLogradouro(instrutorData.logradouro());
-            instrutor.setNumero(instrutorData.numero());
-            instrutor.setComplemento(instrutorData.complemento());
-            instrutor.setBairro(instrutorData.bairro());
-            instrutor.setCidade(instrutorData.cidade());
-            instrutor.setUf(instrutorData.uf());
-            instrutor.setCep(instrutorData.cep());
-
+        instrutor.atualizar(instrutorData);
         return instrutorRepository.save(instrutor);
     }
 

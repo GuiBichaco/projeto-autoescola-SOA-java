@@ -6,7 +6,6 @@ import com.example.autoescola.dto.aluno.AlunoUpdateDTO;
 import com.example.autoescola.entity.Aluno;
 import com.example.autoescola.repository.AlunoRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,8 +20,7 @@ public class AlunoService {
 
     @Transactional
     public Aluno create(AlunoCreateDTO alunoData) {
-        Aluno aluno = new Aluno();
-        BeanUtils.copyProperties(alunoData, aluno);
+        Aluno aluno = new Aluno(alunoData);
         return alunoRepository.save(aluno);
     }
 
@@ -41,16 +39,7 @@ public class AlunoService {
         Aluno aluno = alunoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado com o id: " + id));
 
-            aluno.setNome(alunoData.nome());
-            aluno.setTelefone(alunoData.telefone());
-            aluno.setLogradouro(alunoData.logradouro());
-            aluno.setNumero(alunoData.numero());
-            aluno.setComplemento(alunoData.complemento());
-            aluno.setBairro(alunoData.bairro());
-            aluno.setCidade(alunoData.cidade());
-            aluno.setUf(alunoData.uf());
-            aluno.setCep(alunoData.cep());
-
+        aluno.atualizar(alunoData);
         return alunoRepository.save(aluno);
     }
 

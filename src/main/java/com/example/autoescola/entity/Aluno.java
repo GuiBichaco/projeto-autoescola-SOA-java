@@ -1,5 +1,7 @@
 package com.example.autoescola.entity;
 
+import com.example.autoescola.dto.aluno.AlunoCreateDTO;
+import com.example.autoescola.dto.aluno.AlunoUpdateDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,14 +28,24 @@ public class Aluno {
     @Column(unique = true)
     private String cpf;
 
-    // Endereço
-    private String logradouro;
-    private String numero;
-    private String complemento;
-    private String bairro;
-    private String cidade;
-    private String uf;
-    private String cep;
+    @Embedded
+    private Endereco endereco;
 
     private boolean ativo = true;
+
+    // Construtor para o CreateDTO
+    public Aluno(AlunoCreateDTO dto) {
+        this.nome = dto.nome();
+        this.email = dto.email();
+        this.telefone = dto.telefone();
+        this.cpf = dto.cpf();
+        this.endereco = new Endereco(dto.endereco());
+        this.ativo = true;
+    }
+
+    public void atualizar(AlunoUpdateDTO dto) {
+        if (dto.nome() != null) this.nome = dto.nome();
+        if (dto.telefone() != null) this.telefone = dto.telefone();
+        if (dto.endereco() != null) this.endereco.atualizar(dto.endereco());
+    }
 }

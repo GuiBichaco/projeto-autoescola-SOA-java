@@ -1,5 +1,7 @@
 package com.example.autoescola.entity;
 
+import com.example.autoescola.dto.instrutor.InstrutorCreateDTO;
+import com.example.autoescola.dto.instrutor.InstrutorUpdateDTO;
 import com.example.autoescola.enums.Especialidade;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -30,14 +32,25 @@ public class Instrutor {
     @Enumerated(EnumType.STRING)
     private Especialidade especialidade;
 
-    // Endereço
-    private String logradouro;
-    private String numero;
-    private String complemento;
-    private String bairro;
-    private String cidade;
-    private String uf;
-    private String cep;
+    @Embedded
+    private Endereco endereco;
 
     private boolean ativo = true;
+
+    // Construtor para o CreateDTO
+    public Instrutor(InstrutorCreateDTO dto) {
+        this.nome = dto.nome();
+        this.email = dto.email();
+        this.cnh = dto.cnh();
+        this.especialidade = dto.especialidade();
+        this.endereco = new Endereco(dto.endereco());
+        this.telefone = ""; // Telefone oculto no cadastro
+        this.ativo = true;
+    }
+
+    public void atualizar(InstrutorUpdateDTO dto) {
+        if (dto.nome() != null) this.nome = dto.nome();
+        if (dto.telefone() != null) this.telefone = dto.telefone();
+        if (dto.endereco() != null) this.endereco.atualizar(dto.endereco());
+    }
 }

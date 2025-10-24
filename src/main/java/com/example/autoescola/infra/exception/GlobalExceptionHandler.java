@@ -1,4 +1,4 @@
-package com.example.autoescola.config;
+package com.example.autoescola.infra.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -25,6 +25,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    // Adicionado para tratar as novas exceções de validação
+    @ExceptionHandler(ValidacaoException.class)
+    public ResponseEntity<String> handleValidacaoException(ValidacaoException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
